@@ -50,6 +50,13 @@ class StressNet(torch.nn.Module):
 dummy_input_size = 194  # Modelin eğitimde kullandığı giriş boyutu
 model_url = "https://raw.githubusercontent.com/Lavman54/stress_test/main/stress_model.pth"
 model_path = "stress_model.pth"
+missing_cols = [col for col in model_input_columns if col not in data.columns]
+for col in missing_cols:
+    data[col] = 0  # Eksik sütunları sıfırla doldur
+
+# Sayısal hale getir ve modele gönder
+data = data.apply(pd.to_numeric, errors='coerce').fillna(0)
+input_tensor = torch.tensor(data.values, dtype=torch.float32).to(device)
 
 # Model dosyası yoksa indir
 if not os.path.exists(model_path):
@@ -120,7 +127,10 @@ else:
     data["Egzersiz_Türü_None"] = 1  # Eğer eksikse None olarak ayarla
 
 # 📌 **Modelin Beklediği Format**
+data = data.apply(pd.to_numeric, errors='coerce')  # Tüm değerleri sayıya çevir
+data = data.fillna(0)  # Eksik değerleri 0 ile doldur
 input_tensor = torch.tensor(data.values, dtype=torch.float32).to(device)
+
 
 # 📌 **TAHMİN YAP**
 if st.button("Stres Seviyesini Hesapla"):
