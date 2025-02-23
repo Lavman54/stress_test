@@ -17,7 +17,7 @@ except RuntimeError:
 st.image("https://raw.githubusercontent.com/Lavman54/stress_test/main/Image.jpeg", width=600)
 st.markdown("<h3 style='text-align: center; color: gray;'>Written By Arda Bilgili</h3>", unsafe_allow_html=True)
 
-# 📌 **MODELİ YÜKLE**
+# 📌 **MODELİ TANIMLA**
 class StressNet(torch.nn.Module):
     def __init__(self, input_size):
         super(StressNet, self).__init__()
@@ -50,24 +50,8 @@ class StressNet(torch.nn.Module):
 dummy_input_size = 194  # Modelin eğitimde kullandığı giriş boyutu
 model_url = "https://raw.githubusercontent.com/Lavman54/stress_test/main/stress_model.pth"
 model_path = "stress_model.pth"
-# 📌 Eksik sütunları tamamlayalım
-model_input_columns = [f"feature_{i}" for i in range(dummy_input_size)]  # Modelin beklediği giriş boyutu
-missing_cols = [col for col in model_input_columns if col not in data.columns]
 
-# Eksik sütunları tek seferde ekleyelim (performans açısından daha iyi)
-missing_data = pd.DataFrame(0, index=data.index, columns=missing_cols)
-data = pd.concat([data, missing_data], axis=1)
-
-# Sayısal hale getir ve modele gönder
-data = data.apply(pd.to_numeric, errors='coerce').fillna(0)
-input_tensor = torch.tensor(data.values, dtype=torch.float32).to(device)
-
-
-# Sayısal hale getir ve modele gönder
-data = data.apply(pd.to_numeric, errors='coerce').fillna(0)
-input_tensor = torch.tensor(data.values, dtype=torch.float32).to(device)
-
-# Model dosyası yoksa indir
+# 📌 **Model dosyası yoksa indir**
 if not os.path.exists(model_path):
     try:
         urllib.request.urlretrieve(model_url, model_path)
@@ -129,17 +113,18 @@ data = pd.DataFrame({
     "Kan_Şekeri_Seviyesi": [blood_sugar_level]
 })
 
-# 📌 **Egzersiz Türü için ÖNLEM AL**
-if "Egzersiz_Türü" in data.columns:
-    data = pd.get_dummies(data, columns=["Egzersiz_Türü"], drop_first=True)
-else:
-    data["Egzersiz_Türü_None"] = 1  # Eğer eksikse None olarak ayarla
+# 📌 **Eksik Sütunları Düzelt**
+data = pd.get_dummies(data, columns=["Meslek", "Medeni_Durum", "Egzersiz_Türü"], drop_first=True)
 
-# 📌 **Modelin Beklediği Format**
-data = data.apply(pd.to_numeric, errors='coerce')  # Tüm değerleri sayıya çevir
-data = data.fillna(0)  # Eksik değerleri 0 ile doldur
+# 📌 **Eksik sütunları tamamlayalım**
+model_input_columns = [f"feature_{i}" for i in range(dummy_input_size)]
+missing_cols = [col for col in model_input_columns if col not in data.columns]
+
+missing_data = pd.DataFrame(0, index=data.index, columns=missing_cols)
+data = pd.concat([data, missing_data], axis=1)
+
+data = data.apply(pd.to_numeric, errors='coerce').fillna(0)
 input_tensor = torch.tensor(data.values, dtype=torch.float32).to(device)
-
 
 # 📌 **TAHMİN YAP**
 if st.button("Stres Seviyesini Hesapla"):
