@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 # 📌 **LOGO VE YAZI EKLEYELİM**
-sst.image("https://raw.githubusercontent.com/Lavman54/stress_test/main/Image.jpeg", width=600)
+st.image("https://raw.githubusercontent.com/Lavman54/stress_test/main/Image.jpeg", width=600)
 
 st.markdown("<h3 style='text-align: center; color: gray;'>Written By Arda Bilgili</h3>", unsafe_allow_html=True)
 
