@@ -1,53 +1,51 @@
 import asyncio
+import streamlit as st
+import torch
+import pandas as pd
+import numpy as np
+import os
+import urllib.request
+from sklearn.preprocessing import StandardScaler
 
-# Eğer bir event loop çalışıyorsa onu kapat
+# 📌 **ASYNCIO HATASINI GİDER**
 try:
     asyncio.get_running_loop().close()
 except RuntimeError:
     pass
 
-import streamlit as st
-import torch
-
-# Cihaz belirleme (CUDA destekliyse GPU kullan, değilse CPU)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Modeli yükle
-model = StressNet().to(device)
-try:
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.eval()
-    print("✅ Model başarıyla yüklendi!")
-except Exception as e:
-    print("❌ Model yükleme hatası:", e)
-
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import StandardScaler
-
 # 📌 **LOGO VE YAZI EKLEYELİM**
-st.image("https://raw.githubusercontent.com/Lavman54/stress_test/main/Image.jpeg", width=600)
-
+st.image("https://raw.githubusercontent.com/Lavman54/stress_test/main/Image.jpeg", width=800)
 st.markdown("<h3 style='text-align: center; color: gray;'>Written By Arda Bilgili</h3>", unsafe_allow_html=True)
 
-# 📌 **Eğitilmiş Modeli Yükleyelim**
-class StressNet(nn.Module):
+# 📌 **MODEL DOSYASINI İNDİR VE YÜKLE**
+model_url = "https://raw.githubusercontent.com/Lavman54/stress_test/main/stress_model.pth"
+model_path = "stress_model.pth"
+
+if not os.path.exists(model_path):
+    try:
+        urllib.request.urlretrieve(model_url, model_path)
+        print("✅ Model başarıyla indirildi!")
+    except Exception as e:
+        print("❌ Model indirme hatası:", e)
+
+# 📌 **MODEL SINIFI**
+class StressNet(torch.nn.Module):
     def __init__(self, input_size):
         super(StressNet, self).__init__()
-        self.fc1 = nn.Linear(input_size, 256)
-        self.bn1 = nn.BatchNorm1d(256)
-        self.drop1 = nn.Dropout(0.2)
+        self.fc1 = torch.nn.Linear(input_size, 256)
+        self.bn1 = torch.nn.BatchNorm1d(256)
+        self.drop1 = torch.nn.Dropout(0.2)
 
-        self.fc2 = nn.Linear(256, 128)
-        self.bn2 = nn.BatchNorm1d(128)
-        self.drop2 = nn.Dropout(0.3)
+        self.fc2 = torch.nn.Linear(256, 128)
+        self.bn2 = torch.nn.BatchNorm1d(128)
+        self.drop2 = torch.nn.Dropout(0.3)
 
-        self.fc3 = nn.Linear(128, 64)
-        self.bn3 = nn.BatchNorm1d(64)
-        self.drop3 = nn.Dropout(0.3)
+        self.fc3 = torch.nn.Linear(128, 64)
+        self.bn3 = torch.nn.BatchNorm1d(64)
+        self.drop3 = torch.nn.Dropout(0.3)
 
-        self.fc4 = nn.Linear(64, 3)  # 3 sınıf olduğu için 3 çıkış
-        self.softmax = nn.Softmax(dim=1)
+        self.fc4 = torch.nn.Linear(64, 3)  # 3 sınıf olduğu için
+        self.softmax = torch.nn.Softmax(dim=1)
 
     def forward(self, x):
         x = torch.relu(self.bn1(self.fc1(x)))
@@ -59,45 +57,22 @@ class StressNet(nn.Module):
         x = self.softmax(self.fc4(x))
         return x
 
-# 📌 **ÖZELLİK SAYISINI GÜNCELLEYELİM**
+# 📌 **CİHAZ SEÇİMİ VE MODELİ YÜKLE**
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 dummy_input_size = 194  # Modelin eğitimde kullandığı giriş boyutu
 
-# 📌 **Modeli Yükleyelim**
-import urllib.request
-
-# Modeli GitHub’dan indir
-import urllib.request
-import os
-
-model_url = "https://raw.githubusercontent.com/Lavman54/stress_test/main/stress_model.pth"
-model_path = "stress_model.pth"
-
-# Model dosyası yoksa indir
-if not os.path.exists(model_path):
-    try:
-        urllib.request.urlretrieve(model_url, model_path)
-        print("✅ Model başarıyla indirildi!")
-    except Exception as e:
-        print("❌ Model indirme hatası:", e)
-
-
-# Eğer model dosyası yoksa indir
-try:
-    urllib.request.urlretrieve(model_url, model_path)
-    print("Model başarıyla indirildi!")
-except Exception as e:
-    print("Model indirme hatası:", e)
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 model = StressNet(dummy_input_size).to(device)
-model.load_state_dict(torch.load(model_path, map_location=device))
-model.eval()
+try:
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+    print("✅ Model başarıyla yüklendi!")
+except Exception as e:
+    print("❌ Model yükleme hatası:", e)
 
+# 📌 **KULLANICI GİRİŞ FORMU**
 st.title("📊 Stres Seviyesi Tahmin Uygulaması")
 st.write("Aşağıdaki bilgileri girerek stres seviyenizi öğrenebilirsiniz.")
 
-# 📌 **Kullanıcıdan Veri Girişi**
 age = st.number_input("Yaş", min_value=18, max_value=100, value=30)
 gender = st.selectbox("Cinsiyet", ["Male", "Female"])
 occupation = st.selectbox("Meslek", ["Software Engineer", "Doctor", "Teacher", "Data Scientist", "Other"])
@@ -120,12 +95,10 @@ blood_pressure = st.slider("Tansiyon", 100, 180, 120)
 cholesterol_level = st.slider("Kolesterol Seviyesi", 150, 300, 200)
 blood_sugar_level = st.slider("Kan Şekeri Seviyesi", 70, 200, 100)
 
-# 📌 **Giriş Verisini Model İçin Hazırla**
+# 📌 **GİRİŞ VERİSİNİ MODEL İÇİN HAZIRLA**
 data = pd.DataFrame({
     "Yaş": [age],
     "Cinsiyet": [1 if gender == "Male" else 0],
-    "Meslek": [occupation],
-    "Medeni_Durum": [marital_status],
     "Uyku_Süresi": [sleep_duration],
     "Uyku_Kalitesi": [sleep_quality],
     "Fiziksel_Aktivite": [physical_activity],
@@ -137,31 +110,27 @@ data = pd.DataFrame({
     "Yolculuk_Süresi": [travel_time],
     "Sosyal_Etkileşim": [social_interactions],
     "Meditasyon_Pratiği": [1 if meditation_practice == "Yes" else 0],
-    "Egzersiz_Türü": [exercise_type],
     "Tansiyon": [blood_pressure],
     "Kolesterol_Seviyesi": [cholesterol_level],
     "Kan_Şekeri_Seviyesi": [blood_sugar_level]
 })
 
-# 📌 **Kategorik Değişkenleri Model İçin Dönüştürelim**
-data = pd.get_dummies(data, columns=["Meslek", "Medeni_Durum", "Egzersiz_Türü"], drop_first=True)
+# 📌 **KATEGORİK VERİLERİ DÖNÜŞTÜR**
+data = pd.get_dummies(data, columns=["Egzersiz_Türü"], drop_first=True)
 
-# 📌 **Eksik Sütunları Tamamlayalım**
-model_input_columns = [f"feature_{i}" for i in range(dummy_input_size)]  # Modelin beklediği giriş boyutu
-# Eksik sütunları tek seferde ekle (performans arttırıldı)
+# 📌 **EKSİK SÜTUNLARI TAMAMLA**
+model_input_columns = [f"feature_{i}" for i in range(dummy_input_size)]
+missing_cols = [col for col in model_input_columns if col not in data.columns]
 missing_data = pd.DataFrame(0, index=data.index, columns=missing_cols)
 data = pd.concat([data, missing_data], axis=1)
 
-
-# 📌 **Modelin Beklediği Şekle Getir**
+# 📌 **TENSOR FORMATINA GETİR**
 data = data[model_input_columns]
 input_tensor = torch.tensor(data.values, dtype=torch.float32).to(device)
 
-# 📌 **Tahmin Yap**
+# 📌 **TAHMİN YAP**
 if st.button("Stres Seviyesini Hesapla"):
     output = model(input_tensor)
     predicted_class = torch.argmax(output, dim=1).item()
-
-    # Sonucu Göster
     stress_levels = ["Düşük Stres", "Orta Stres", "Yüksek Stres"]
     st.success(f"✅ Tahmin Edilen Stres Seviyesi: {stress_levels[predicted_class]}")
