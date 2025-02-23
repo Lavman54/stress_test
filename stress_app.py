@@ -11,6 +11,18 @@ asyncio.set_event_loop(asyncio.new_event_loop())
 
 import streamlit as st
 import torch
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Model şu cihazda çalışıyor: {device}")
+
+model = StressNet(dummy_input_size).to(device)
+
+try:
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+    print("✅ Model başarıyla yüklendi!")
+except Exception as e:
+    print("❌ Model yükleme hatası:", e)
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
