@@ -1,9 +1,13 @@
 import asyncio
 
 try:
-    asyncio.get_running_loop().close()
+    loop = asyncio.get_running_loop()
+    loop.stop()
+    loop.close()
 except RuntimeError:
     pass
+
+asyncio.set_event_loop(asyncio.new_event_loop())
 
 import streamlit as st
 import torch
