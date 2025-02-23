@@ -1,3 +1,10 @@
+import asyncio
+
+try:
+    asyncio.get_running_loop().close()
+except RuntimeError:
+    pass
+
 import streamlit as st
 import torch
 import pandas as pd
