@@ -1,28 +1,5 @@
-import asyncio
-
-try:
-    loop = asyncio.get_running_loop()
-    loop.stop()
-    loop.close()
-except RuntimeError:
-    pass
-
-asyncio.set_event_loop(asyncio.new_event_loop())
-
 import streamlit as st
 import torch
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Model şu cihazda çalışıyor: {device}")
-
-model = StressNet(dummy_input_size).to(device)
-
-try:
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.eval()
-    print("✅ Model başarıyla yüklendi!")
-except Exception as e:
-    print("❌ Model yükleme hatası:", e)
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -40,7 +17,7 @@ except RuntimeError:
 st.image("https://raw.githubusercontent.com/Lavman54/stress_test/main/Image.jpeg", width=600)
 st.markdown("<h3 style='text-align: center; color: gray;'>Written By Arda Bilgili</h3>", unsafe_allow_html=True)
 
-# 📌 **MODELİ TANIMLA**
+# 📌 **MODEL TANIMLAMASI (ÖNCE YÜKLEYELİM)**
 class StressNet(torch.nn.Module):
     def __init__(self, input_size):
         super(StressNet, self).__init__()
@@ -74,7 +51,11 @@ dummy_input_size = 194  # Modelin eğitimde kullandığı giriş boyutu
 model_url = "https://raw.githubusercontent.com/Lavman54/stress_test/main/stress_model.pth"
 model_path = "stress_model.pth"
 
-# 📌 **Model dosyası yoksa indir**
+# 📌 **MODELİ CİHAZA YÜKLE**
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Model şu cihazda çalışıyor: {device}")
+
+# Model dosyası yoksa indir
 if not os.path.exists(model_path):
     try:
         urllib.request.urlretrieve(model_url, model_path)
@@ -82,7 +63,7 @@ if not os.path.exists(model_path):
     except Exception as e:
         print("❌ Model indirme hatası:", e)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Modeli yükle
 model = StressNet(dummy_input_size).to(device)
 
 try:
@@ -136,16 +117,16 @@ data = pd.DataFrame({
     "Kan_Şekeri_Seviyesi": [blood_sugar_level]
 })
 
-# 📌 **Eksik Sütunları Düzelt**
+# 📌 **Kategorik Değişkenleri Model İçin Dönüştürelim**
 data = pd.get_dummies(data, columns=["Meslek", "Medeni_Durum", "Egzersiz_Türü"], drop_first=True)
 
-# 📌 **Eksik sütunları tamamlayalım**
+# 📌 **Eksik Sütunları Tamamlayalım**
 model_input_columns = [f"feature_{i}" for i in range(dummy_input_size)]
 missing_cols = [col for col in model_input_columns if col not in data.columns]
-
 missing_data = pd.DataFrame(0, index=data.index, columns=missing_cols)
 data = pd.concat([data, missing_data], axis=1)
 
+# 📌 **Modelin Beklediği Format**
 data = data.apply(pd.to_numeric, errors='coerce').fillna(0)
 input_tensor = torch.tensor(data.values, dtype=torch.float32).to(device)
 
