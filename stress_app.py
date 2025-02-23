@@ -1,6 +1,26 @@
+import asyncio
+
+# Eğer bir event loop çalışıyorsa onu kapat
+try:
+    asyncio.get_running_loop().close()
+except RuntimeError:
+    pass
+
 import streamlit as st
 import torch
-import torch.nn as nn
+
+# Cihaz belirleme (CUDA destekliyse GPU kullan, değilse CPU)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Modeli yükle
+model = StressNet().to(device)
+try:
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+    print("✅ Model başarıyla yüklendi!")
+except Exception as e:
+    print("❌ Model yükleme hatası:", e)
+
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -46,8 +66,20 @@ dummy_input_size = 194  # Modelin eğitimde kullandığı giriş boyutu
 import urllib.request
 
 # Modeli GitHub’dan indir
+import urllib.request
+import os
+
 model_url = "https://raw.githubusercontent.com/Lavman54/stress_test/main/stress_model.pth"
 model_path = "stress_model.pth"
+
+# Model dosyası yoksa indir
+if not os.path.exists(model_path):
+    try:
+        urllib.request.urlretrieve(model_url, model_path)
+        print("✅ Model başarıyla indirildi!")
+    except Exception as e:
+        print("❌ Model indirme hatası:", e)
+
 
 # Eğer model dosyası yoksa indir
 try:
@@ -116,9 +148,10 @@ data = pd.get_dummies(data, columns=["Meslek", "Medeni_Durum", "Egzersiz_Türü"
 
 # 📌 **Eksik Sütunları Tamamlayalım**
 model_input_columns = [f"feature_{i}" for i in range(dummy_input_size)]  # Modelin beklediği giriş boyutu
-for col in model_input_columns:
-    if col not in data.columns:
-        data[col] = 0  # Eksik olanlara 0 ekle
+# Eksik sütunları tek seferde ekle (performans arttırıldı)
+missing_data = pd.DataFrame(0, index=data.index, columns=missing_cols)
+data = pd.concat([data, missing_data], axis=1)
+
 
 # 📌 **Modelin Beklediği Şekle Getir**
 data = data[model_input_columns]
