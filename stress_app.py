@@ -27,6 +27,12 @@ if not os.path.exists(model_path):
         print("✅ Model başarıyla indirildi!")
     except Exception as e:
         print("❌ Model indirme hatası:", e)
+# 📌 **Egzersiz Türü sütununun olup olmadığını kontrol et ve sonra dummies işlemi yap**
+if "Egzersiz_Türü" in data.columns:
+    data = pd.get_dummies(data, columns=["Egzersiz_Türü"], drop_first=True)
+else:
+    print("⚠️ 'Egzersiz_Türü' sütunu bulunamadı! Varsayılan değer ekleniyor...")
+    data["Egzersiz_Türü_None"] = 1  # Egzersiz türü eksikse None olarak işaretle
 
 # 📌 **MODEL SINIFI**
 class StressNet(torch.nn.Module):
