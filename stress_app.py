@@ -43,7 +43,19 @@ class StressNet(nn.Module):
 dummy_input_size = 194  # Modelin eğitimde kullandığı giriş boyutu
 
 # 📌 **Modeli Yükleyelim**
-model_path = "/home/lavman/myenv/stress_model.pth"
+import urllib.request
+
+# Modeli GitHub’dan indir
+model_url = "https://raw.githubusercontent.com/Lavman54/stress_test/main/stress_model.pth"
+model_path = "stress_model.pth"
+
+# Eğer model dosyası yoksa indir
+try:
+    urllib.request.urlretrieve(model_url, model_path)
+    print("Model başarıyla indirildi!")
+except Exception as e:
+    print("Model indirme hatası:", e)
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = StressNet(dummy_input_size).to(device)
